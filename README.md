@@ -13,6 +13,9 @@ Interpreting and explaining the behavior of neural networks is critical for many
 Download CUB or ImageNet and set them into direction of your "dataset_dir". You can also make your own dataset with the structure similar to ImageNet and name it as Custom.
 
 #### Usage for MNIST
+- *I suppose they used Python 3.7, since with other versions it had issues downloading the libraries. There might be potential issues installing the 3.7 version, which I fixed as [here](https://github.com/conda/conda/issues/12206#issuecomment-1368982024).*
+- MNIST dataset not being accessible when trying to download was fixes by manually downloading the dataset and creating `train.pt` and `test.pt` files in 'data/processed' folders. Changed `mnist.py` file (anaconda3/envs/py37/lib/python3.7/site-packages/torchvision/datasets/mnist.py) of the library can be found in the folder "changes". Might be fixed by upgrading the `torchvision` library if it doesn't impact some dependencies.
+
 Using the following command for training
 ```
 python main_recon.py --num_classes 10 --num_cpt 20 --lr 0.001 --epoch 50 --lr_drop 30
