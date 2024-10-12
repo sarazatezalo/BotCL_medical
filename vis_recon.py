@@ -20,8 +20,9 @@ os.makedirs('vis_pp/', exist_ok=True)
 def main():
     transform = transforms.Compose([transforms.ToTensor()])
     transform2 = transforms.Normalize((0.1307,), (0.3081,))
-    val_imgs = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=False, download=True, transform=None).data
-    val_target = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=False, download=True, transform=None).targets
+    #transform2 = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]) to be consistent with training code?
+    val_imgs = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=False, download=False, transform=None).data
+    val_target = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=False, download=False, transform=None).targets
     valset = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=False, transform=transform)
     valloader = DataLoader(valset, batch_size=batch_size,
                            shuffle=False,
@@ -30,6 +31,8 @@ def main():
     model = ConceptAutoencoder(args, num_concepts=args.num_cpt, vis=True)
     #device = torch.device("cuda:0")
     #model.to(device)
+
+    # Loading the model parameters from a saved checkpoint (the trainig done prior in main_recon.py)
     checkpoint = torch.load(f"saved_model/mnist_model_cpt{args.num_cpt}.pt", map_location=torch.device('cpu')) #map_location="cuda:0"
     model.load_state_dict(checkpoint, strict=False)
     model.eval()
@@ -40,10 +43,15 @@ def main():
 
     img_orl = Image.fromarray((data[index][0].cpu().detach().numpy()*255).astype(np.uint8), mode='L')
     img_orl.save("vis/" + f'origin.png')
-    img = data[index].unsqueeze(0)#.to(device)
-    cpt, pred, cons, att_loss, pp = model(transform2(img))
+    
+    # The following line migth be needed when device is "cuda", but for now it just causes errors for the normalization function!
+    #img = data[index].unsqueeze(0)#.to(device)
+    img = data[index]
+    img = transform2(img)
+    img = img.unsqueeze(0)
+    cpt, pred, cons, att_loss, pp = model(img) # I think cpt are the concept activations, and cons are the concepts we obtain
     # print(torch.softmax(pred, dim=-1))
-    print("The prediction is: ", torch.argmax(pred, dim=-1))
+    print("The prediction is: ", torch.argmax(pred, dim=-1).item())
     cons = cons.view(28, 28).cpu().detach().numpy()
     show(data[index].numpy()[0], cons)
 
@@ -59,8 +67,12 @@ def main():
     if args.deactivate == -1:
         is_start = True
         for batch_idx, (data, label) in enumerate(valloader):
-            data, label = transform2(data), label#.to(device) for both if cuda
-            cpt, pred, out, att_loss, pp = model(data, None, "pass")
+            # here we have to run all the batch images through the transform2 function
+            transformed_data = torch.stack([transform2(img) for img in data])
+
+            #data, label = transform2(data), label  #.to(device) for both if cuda
+            # the device=cuda code inputs just data to the model
+            cpt, pred, out, att_loss, pp = model(transformed_data, None, "pass")
 
             if is_start:
                 all_output = cpt.cpu().detach().float()
@@ -73,7 +85,7 @@ def main():
         all_output = all_output.numpy().astype("float32")
         all_label = all_label.squeeze(-1).numpy().astype("float32")
 
-        print("cpt visualization")
+        print("Concept visualization")
         for j in range(args.num_cpt):
             root = 'vis_pp/' + "cpt" + str(j+1) + "/"
             os.makedirs(root, exist_ok=True)
@@ -89,7 +101,7 @@ def main():
                 slot_image = np.array(Image.open(root + f'{i}.png'), dtype=np.uint8)
                 heatmap_only, heatmap_on_image = apply_colormap_on_image(img_orl, slot_image, 'jet')
                 heatmap_on_image.save(root + f'mask_{i}.png')
-
+     
 
 if __name__ == '__main__':
     args = parser.parse_args()

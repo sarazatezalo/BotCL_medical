@@ -63,7 +63,7 @@ class Aggregate(nn.Module):
         self.args = args
         if args.layer != 1:
             self.fc1 = nn.Linear(num_concepts, num_concepts)
-        self.fc2 = nn.Linear(num_concepts, 10)
+        self.fc2 = nn.Linear(num_concepts, 3)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
@@ -73,22 +73,6 @@ class Aggregate(nn.Module):
         return x
 
 
-class MNISTSimple(nn.Module):
-    def __init__(self):
-        super(MNISTSimple, self).__init__()
-        hidden_dim = 32
-        self.conv1 = nn.Conv2d(1, 10, (5, 5), stride=2, padding=1)  # b, 16, 10, 10
-        self.conv2 = nn.Conv2d(10, hidden_dim, (5, 5), stride=2, padding=1)  # b, 8, 3, 3
-        self.relu = nn.ReLU(inplace=True)
-        self.fc = nn.Linear(hidden_dim, 10)
-
-    def forward(self, x):
-        x = self.relu(self.conv1(x))
-        x = self.relu(self.conv2(x))
-        f = x
-        x = F.adaptive_max_pool2d(x, 1).squeeze(-1).squeeze(-1)
-        pred = self.fc(x)
-        return pred, f
 
 # if __name__ == '__main__':
 #     model = ConceptAutoencoder(num_concepts=10)

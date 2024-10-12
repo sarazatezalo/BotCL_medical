@@ -18,11 +18,19 @@ Download CUB or ImageNet and set them into direction of your "dataset_dir". You 
 
 Using the following command for training
 ```
-python main_recon.py --num_classes 10 --num_cpt 20 --lr 0.001 --epoch 50 --lr_drop 30
+python main_recon.py --num_classes 10 --num_cpt 20 --lr 0.001 --epoch 50 --lr_drop 30 --dataset MNIST
 ```
-Use the following command for the inference of a sample. You can change the index to select different input samples. Change top-sample (top-10 in the paper) to show more details for a concept. Change deactivate to remove a concept. Visualization for the input sample and all concepts are shown at folder "vis" and "vis_pp", respectively. 
+Use the following command for the inference of a sample. You can change the index to select different input samples. 
+Change top-sample (top-10 in the paper) to show more details for a concept, i.e. for how many samples we show the outputs. Change deactivate to remove a concept. 
+Visualization for the input sample and all concepts are shown at folder "vis" and "vis_pp", respectively. 
 ```
-python vis_recon.py --num_classes 10 --num_cpt 20 --index 0 --top_sample 20 ---deactivate -1
+python vis_recon.py --num_classes 10 --num_cpt 20 --index 0 --top_sample 20 --deactivate -1 --dataset MNIST
+```
+For BUSI:
+```
+python main_recon.py --num_classes 3 --num_cpt 20  --lr 0.001 --epoch 50 --lr_drop 30 --dataset BUSI
+python vis_recon.py --num_classes 3 --num_cpt 20 --index 0 --top_sample 20 --deactivate -1 --dataset BUSI
+
 ```
 
 #### Usage for CUB200, ImageNet, and Custom

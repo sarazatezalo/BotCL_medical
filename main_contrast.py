@@ -19,6 +19,7 @@ def main():
     torch.backends.cudnn.benchmark = True
 
     if not args.pre_train:
+        # If we don't require pretraining (i.e. we already trained the backbone model and just want to load it)
         checkpoint = torch.load(os.path.join(args.output_dir,
             f"{args.dataset}_{args.base_model}_cls{args.num_classes}_cpt_no_slot.pt"), map_location=device)
         model.load_state_dict(checkpoint, strict=False)
@@ -29,6 +30,7 @@ def main():
     else:
         print("start training the backbone")
 
+    # Otherwise we train it alltogether?
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=args.lr)
     model.to(device)
@@ -48,6 +50,7 @@ def main():
         train(args, model, device, train_loader1, optimizer, i)
 
         if not args.pre_train:
+            # If we don't require pretraining of the backbone model
             map, acc = test_MAP(args, model, train_loader2, val_loader, device)
             print("ACC: ", acc)
             print("MAP", map)
@@ -56,6 +59,7 @@ def main():
             acc = test(args, model, val_loader, device)
 
         if acc > acc_max:
+            # Do they want to do early stopping with this or what?
             acc_max = acc
             print("get better result, save current model.")
             torch.save(model.state_dict(), os.path.join(args.output_dir,

@@ -23,16 +23,23 @@ def train(args, model, device, loader, rec_loss, optimizer, epoch):
                              [recon_losses, pred_losses, pred_acces, batch_dis_losses, consistence_losses, q_losses],
                              prefix="Epoch: [{}]".format(epoch))
 
+    # Regular training of the model (CNN for obtaining features of an image)
     model.train()
+    # Additional losses integrated in the pipeline
     for batch_idx, (data, label) in enumerate(loader):
         data, label = data.to(device), label.to(device)
         cpt, pred, out, att, update = model(data)
 
+        # Softmax cross-entropy for target classification loss
         loss_pred = F.nll_loss(F.log_softmax(pred, dim=1), label)
         acc = cal_acc(pred, label)
+        # Reconstruction loss of decoder (takes t as input and reconstructs the original image)
         reconstruction_loss = rec_loss(out.view(data.size(0), 1, 28, 28), data)
+        # Quatization loss: to assure closeness of t values to 0 or 1
         quantity_loss = quantization_loss(cpt)
+        # Mutual distinctiveness of concepts 
         batch_dis_loss = batch_cpt_discriminate(update, att)
+        # Individual consisteny of a feature in different images
         consistence_loss = att_consistence(update, att)
         att_loss = att_area_loss(att)  # attention loss used to prevent overflow
 
@@ -62,10 +69,15 @@ def evaluation(model, device, loader, rec_loss):
     record_att = 0.0
     accs = 0
     L = len(loader)
+    preds = []
+    labels = []
 
     for batch_idx, (data, label) in enumerate(loader):
         data, label = data.to(device), label.to(device)
         cpt, pred, out, att, update = model(data)
+
+        preds.append(pred)
+        labels.append(label)
 
         acc = cal_acc(pred, label)
         reconstruction_loss = rec_loss(out.view(data.size(0), 28, 28), data)
@@ -73,7 +85,7 @@ def evaluation(model, device, loader, rec_loss):
         att_loss = att_area_loss(att)
         record_att += att_loss.item()
         accs += acc
-    return round(record_res/L, 4), round(record_att/L, 4), round(accs/L, 4)
+    return round(record_res/L, 4), round(record_att/L, 4), round(accs/L, 4), preds, labels
 
 
 def vis_one(model, device, loader, epoch=None, select_index=0):

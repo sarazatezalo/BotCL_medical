@@ -7,15 +7,48 @@ import torch.nn as nn
 from configs import parser
 from model.reconstruct.model_main import ConceptAutoencoder
 import os
-
+from BUSI import BUSI
 
 os.makedirs('saved_model/', exist_ok=True)
 
+def save_predictions_to_txt(epoch, predictions, labels, filename='predictions.txt'):
+    # Make sure to detach the predictions from the graph and convert them to numpy
+    #predictions = predictions.detach().numpy()
+    #labels = labels.detach().numpy()
+
+    with open(filename, 'a') as f:  # 'a' to append to the file
+        f.write(f"Epoch {epoch} Predictions:\n")
+        for pred, label in zip(predictions, labels):
+            f.write(f"Predicted: {pred}, True Label: {label}\n")
+        f.write("\n")  # Add a newline for better separation between epochs
 
 def main():
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-    trainset = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=True, download=False, transform=transform)
-    valset = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=False, download=False, transform=transform)
+    if (args.dataset=="MNIST"):
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+        trainset = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=True, download=False, transform=transform)
+        valset = datasets.MNIST('/Users/sarazatezalo/Documents/EPFL/semestral project/data/', train=False, download=False, transform=transform)
+    elif (args.dataset=="BUSI"):
+        transform = transforms.Compose([transforms.Resize((28,28)),transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+        # Prepare datasets for loading (newly created train and val folders)
+        output_dir = '/Users/sarazatezalo/Documents/EPFL/semestral project/data/BUSI/'
+        trainset = BUSI(
+            [os.path.join(output_dir, 'train', label, fname) for label in ['benign', 'malignant', 'normal'] for fname in os.listdir(os.path.join(output_dir, 'train', label))],
+            [0] * len(os.listdir(os.path.join(output_dir, 'train', 'benign'))) +
+            [1] * len(os.listdir(os.path.join(output_dir, 'train', 'malignant'))) +
+            [2] * len(os.listdir(os.path.join(output_dir, 'train', 'normal'))),
+            transform=transform
+        )
+
+        valset = BUSI(
+            [os.path.join(output_dir, 'val', label, fname) for label in ['benign', 'malignant', 'normal'] for fname in os.listdir(os.path.join(output_dir, 'val', label))],
+            [0] * len(os.listdir(os.path.join(output_dir, 'val', 'benign'))) +
+            [1] * len(os.listdir(os.path.join(output_dir, 'val', 'malignant'))) +
+            [2] * len(os.listdir(os.path.join(output_dir, 'val', 'normal'))),
+            transform=transform
+        )
+    else:
+        ValueError(f'unknown {args.dataset}')
+
     trainloader = DataLoader(trainset, batch_size=args.batch_size,
                                               shuffle=True,
                                               num_workers=args.num_workers,
@@ -24,6 +57,9 @@ def main():
                                             shuffle=False,
                                             num_workers=args.num_workers,
                                             pin_memory=False)
+    for images, labels in trainloader:
+        print(images.size(), labels)
+    
     model = ConceptAutoencoder(args, num_concepts=args.num_cpt)
     reconstruction_loss = nn.MSELoss()
     params = [p for p in model.parameters() if p.requires_grad]
@@ -43,7 +79,7 @@ def main():
             print("Adjusted learning rate to 0.00001")
             optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
         train(args, model, 'cpu', trainloader, reconstruction_loss, optimizer, i)
-        res_loss, att_loss, acc = evaluation(model, 'cpu', valloader, reconstruction_loss)
+        res_loss, att_loss, acc, preds, acc_labels = evaluation(model, 'cpu', valloader, reconstruction_loss)
         record_res.append(res_loss)
         record_att.append(att_loss)
         accs.append(acc)
@@ -51,8 +87,10 @@ def main():
             #vis_one(model, 'cpu', valloader, epoch=i, select_index=1)
         print("Reconstruction Loss: ", record_res)
         print("Acc: ", accs)
-        torch.save(model.state_dict(), f"saved_model/mnist_model_cpt{args.num_cpt}.pt")
 
+        save_predictions_to_txt(i, preds, acc_labels)
+        torch.save(model.state_dict(), f"saved_model/busi_model_cpt{args.num_cpt}.pt")
+    
 
 if __name__ == '__main__':
     args = parser.parse_args()
