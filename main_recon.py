@@ -30,22 +30,8 @@ def main():
     elif (args.dataset=="BUSI"):
         transform = transforms.Compose([transforms.Resize((28,28)),transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
         # Prepare datasets for loading (newly created train and val folders)
-        output_dir = '/Users/sarazatezalo/Documents/EPFL/semestral project/data/BUSI/'
-        trainset = BUSI(
-            [os.path.join(output_dir, 'train', label, fname) for label in ['benign', 'malignant', 'normal'] for fname in os.listdir(os.path.join(output_dir, 'train', label))],
-            [0] * len(os.listdir(os.path.join(output_dir, 'train', 'benign'))) +
-            [1] * len(os.listdir(os.path.join(output_dir, 'train', 'malignant'))) +
-            [2] * len(os.listdir(os.path.join(output_dir, 'train', 'normal'))),
-            transform=transform
-        )
-
-        valset = BUSI(
-            [os.path.join(output_dir, 'val', label, fname) for label in ['benign', 'malignant', 'normal'] for fname in os.listdir(os.path.join(output_dir, 'val', label))],
-            [0] * len(os.listdir(os.path.join(output_dir, 'val', 'benign'))) +
-            [1] * len(os.listdir(os.path.join(output_dir, 'val', 'malignant'))) +
-            [2] * len(os.listdir(os.path.join(output_dir, 'val', 'normal'))),
-            transform=transform
-        )
+        trainset = BUSI(dataset_dir='../data/BUSI/', set_type="train", transform=transform)
+        valset = BUSI(dataset_dir='../data/BUSI/', set_type="val", transform=transform)
     else:
         ValueError(f'unknown {args.dataset}')
 
@@ -57,9 +43,8 @@ def main():
                                             shuffle=False,
                                             num_workers=args.num_workers,
                                             pin_memory=False)
-    for images, labels in trainloader:
-        print(images.size(), labels)
     
+   
     model = ConceptAutoencoder(args, num_concepts=args.num_cpt)
     reconstruction_loss = nn.MSELoss()
     params = [p for p in model.parameters() if p.requires_grad]

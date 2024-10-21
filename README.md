@@ -26,7 +26,10 @@ Visualization for the input sample and all concepts are shown at folder "vis" an
 ```
 python vis_recon.py --num_classes 10 --num_cpt 20 --index 0 --top_sample 20 --deactivate -1 --dataset MNIST
 ```
-For BUSI:
+#### Usage for BUSI:
+
+Run the `prepare_dataset` function in `BUSI.py` changing the root directory to the one containing the downloaded dataset. Output directory should be `'../data/BUSI'`.
+For the reconstruction code, run the following for training and visualization:
 ```
 python main_recon.py --num_classes 3 --num_cpt 20  --lr 0.001 --epoch 50 --lr_drop 30 --dataset BUSI
 python vis_recon.py --num_classes 3 --num_cpt 20 --index 0 --top_sample 20 --deactivate -1 --dataset BUSI

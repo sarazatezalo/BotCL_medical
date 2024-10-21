@@ -3,6 +3,7 @@ from torch.utils.data.dataloader import DataLoader
 from loaders.CUB200 import CUB_200
 from loaders.ImageNet import ImageNet
 from loaders.matplob import Matplot, MakeImage
+from BUSI import BUSI
 import numpy as np
 from PIL import Image
 import torch
@@ -70,6 +71,11 @@ def get_transform(args):
         transform_train = get_transformations_synthetic()
         transform_val = get_transformations_synthetic()
         return {"train": transform_train, "val": transform_val}
+    elif args.dataset == "BUSI":
+        # For now it's arbitrary, like for cifar...
+        transform_train = transforms.Compose([transforms.Resize([args.img_size, args.img_size]), transforms.ToTensor(),
+                                        transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2470, 0.2435, 0.2616])])
+        return {"train": transform_train, "val": transform_val}
 
     raise ValueError(f'unknown {args.dataset}')
 
@@ -99,6 +105,10 @@ def select_dataset(args, transform):
         data_ = MakeImage().get_img()
         dataset_train = Matplot(data_, "train", transform=transform["train"])
         dataset_val = Matplot(data_, "val", transform=transform["val"])
+        return dataset_train, dataset_val
+    elif args.dataset == "BUSI":
+        dataset_train = BUSI(dataset_dir='../data/BUSI/', set_type="train", transform=transform["train"])
+        dataset_val = BUSI(dataset_dir='../data/BUSI/', set_type="val", transform=transform["train"])
         return dataset_train, dataset_val
 
     raise ValueError(f'unknown {args.dataset}')

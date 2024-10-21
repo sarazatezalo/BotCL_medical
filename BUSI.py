@@ -8,10 +8,21 @@ from torchvision import transforms
 
 # Define custom dataset class
 class BUSI(Dataset):
-    def __init__(self, image_paths, labels, transform=None):
-        self.image_paths = image_paths
-        self.labels = labels
+    def __init__(self, dataset_dir, set_type='train', transform=None):
+        self.dataset_dir = dataset_dir
+        self.set_type = set_type
+        self.image_paths = []
+        self.labels = []
         self.transform = transform
+
+        # Defining label mapping
+        label_mapping = {'benign': 0, 'malignant': 1, 'normal': 2}
+        for label, label_idx in label_mapping.items():
+            category_dir = os.path.join(self.dataset_dir, self.set_type, label)
+            file_names = os.listdir(category_dir)
+
+            self.image_paths += [os.path.join(category_dir, fname) for fname in file_names]
+            self.labels += [label_idx] * len(file_names)
 
     def __len__(self):
         return len(self.image_paths)
@@ -66,6 +77,7 @@ def prepare_dataset(root_dir, output_dir, val_size=0.2):
 
     print("Train and validation datasets created successfully.")
 
+
 # Define your transformations (similar to how you would for MNIST)
 #transform = transforms.Compose([
  #   transforms.Resize((28, 28)),  # Resize to match MNIST input size if needed
@@ -73,7 +85,7 @@ def prepare_dataset(root_dir, output_dir, val_size=0.2):
  #  transforms.Normalize((0.5,), (0.5,))  # Normalize (optional)
 #])
 
-#root_dir = '/Users/sarazatezalo/Documents/EPFL/semestral project/Dataset_BUSI_with_GT/'
-#output_dir = '/Users/sarazatezalo/Documents/EPFL/semestral project/data/BUSI/'
+#root_dir = '../Dataset_BUSI_with_GT/'
+#output_dir = '../data/BUSI/'
 #prepare_dataset(root_dir, output_dir) # TO BE RUN ONLY ONCE
 
